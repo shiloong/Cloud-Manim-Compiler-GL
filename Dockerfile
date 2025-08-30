@@ -8,23 +8,31 @@ RUN echo "deb http://deb.debian.org/debian bullseye main contrib non-free" > /et
     echo "deb http://security.debian.org/debian-security bullseye-security main contrib non-free" >> /etc/apt/sources.list && \
     apt-get update -y && apt-get upgrade -y
 
-# 安装中文字体和manimGL依赖
+# 安装中文字体、manimGL依赖和编译工具
 RUN apt-get install -y --no-install-recommends \
+    # 中文字体
     fonts-wqy-zenhei \
     fonts-wqy-microhei \
     fonts-arphic-ukai \
     fonts-arphic-uming \
+    # 图形和媒体依赖
     libgl1-mesa-glx \
     libglib2.0-0 \
     ffmpeg \
     libxext6 \
     libsm6 \
     libxrender1 \
+    # 编译工具和依赖
+    build-essential \
+    python3-dev \
+    libssl-dev \
+    libffi-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装notebook和manimGL
 RUN pip install --upgrade pip && \
+    pip install setuptools wheel && \
     pip install notebook manimgl
 
 ARG NB_USER=manimuser
