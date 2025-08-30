@@ -1,22 +1,37 @@
-FROM 3b1b/manim:latest
+# 基于Python 3.9镜像，这是ManimGL推荐的版本
+FROM python:3.9-slim
 
-USER root
+# 设置工作目录
+WORKDIR /home/jovyan
 
-# 安装中文字体
+# 安装系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    fonts-wqy-zenhei \
-    fonts-wqy-microhei \
-    fonts-arphic-ukai \
-    fonts-arphic-uming \
-    && apt-get clean \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libxrender1 \
+    libsm6 \
+    libxext6 \
+    ffmpeg \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装notebook支持
-RUN pip install notebook
+# 安装manimgl
+RUN pip install --no-cache-dir manimgl
 
-ARG NB_USER=manimuser
-USER ${NB_USER}
+# 安装Jupyter，因为MyBinder需要Jupyter环境
+RUN pip install --no-cache-dir jupyter
 
-# 复制当前目录文件到容器内的/manim目录
-COPY --chown=manimuser:manimuser . /manim
+# 设置环境变量，确保中文显示正常
+ENV PYTHONIOENCODING=utf-8
+ENV LANG=C.UTF-8
+
+# 暴露Jupyter端口
+EXPOSE 8888
+
+# 启动Jupyter Notebook的命令
+CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=''", "--NotebookApp.password=''"]
     
