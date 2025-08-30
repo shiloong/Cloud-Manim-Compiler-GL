@@ -2,49 +2,29 @@ FROM python:3.9-bullseye
 
 USER root
 
-# 配置软件源并更新
-RUN echo "deb http://deb.debian.org/debian bullseye main contrib non-free" > /etc/apt/sources.list && \
-    echo "deb http://deb.debian.org/debian bullseye-updates main contrib non-free" >> /etc/apt/sources.list && \
-    echo "deb http://security.debian.org/debian-security bullseye-security main contrib non-free" >> /etc/apt/sources.list && \
-    apt-get update -y && apt-get upgrade -y
-
-# 安装完整依赖（新增pangocairo相关库）
-RUN apt-get install -y --no-install-recommends \
+# 配置软件源并更新系统
+RUN echo "deb http://deb.debian.org/debian bullseye main contrib non-free\ndeb http://deb.debian.org/debian bullseye-updates main contrib non-free\ndeb http://security.debian.org/debian-security bullseye-security main contrib non-free" > /etc/apt/sources.list && \
+    apt-get update -y && apt-get upgrade -y && \
+    # 安装依赖包
+    apt-get install -y --no-install-recommends \
     # 中文字体
-    fonts-wqy-zenhei \
-    fonts-wqy-microhei \
-    fonts-arphic-ukai \
-    fonts-arphic-uming \
+    fonts-wqy-zenhei fonts-wqy-microhei fonts-arphic-ukai fonts-arphic-uming \
     # 图形和媒体依赖
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    ffmpeg \
-    libxext6 \
-    libsm6 \
-    libxrender1 \
+    libgl1-mesa-glx libglib2.0-0 ffmpeg libxext6 libsm6 libxrender1 \
     # 编译工具
-    build-essential \
-    python3-dev \
-    libssl-dev \
-    libffi-dev \
-    # 新增pangocairo依赖（解决当前错误）
-    libpango1.0-dev \
-    libcairo2-dev \
+    build-essential python3-dev libssl-dev libffi-dev \
+    # pangocairo相关依赖
+    libpango1.0-dev libcairo2-dev \
     # 其他图形依赖
-    libgirepository1.0-dev \
-    gobject-introspection \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    libgirepository1.0-dev gobject-introspection && \
+    # 清理缓存
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 分步安装Python包
-RUN pip install --upgrade pip -v && \
-    pip install setuptools wheel -v && \
-    pip install notebook -v && \
-    # 单独安装manimgl
-    pip install manimgl -v
+# 安装Python包
+RUN pip install --upgrade pip setuptools wheel -v && \
+    pip install notebook manimgl -v
 
 ARG NB_USER=manimuser
 USER ${NB_USER}
 
 COPY --chown=manimuser:manimuser . /manim
-    
