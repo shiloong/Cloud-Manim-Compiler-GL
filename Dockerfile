@@ -1,33 +1,26 @@
-# 使用 Jupyter 的 scipy-notebook 作为基础镜像
-FROM jupyter/scipy-notebook:latest
+# 使用 Python 官方镜像作为基础
+FROM python:3.9-slim
 
-# 切换到 root 用户进行系统级安装
-USER root
-
-# 安装 ManimGL 所需的系统依赖和中文字体
+# 安装系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     texlive \
     texlive-latex-extra \
-    texlive-fonts-extra \
     libgl1-mesa-glx \
-    libxcb-xinerama0 \
     fonts-wqy-zenhei \
     fonts-wqy-microhei \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 ManimGL 及其 Python 依赖
-RUN pip install --no-cache-dir \
-    manimgl \
-    colour
+# 安装 ManimGL
+RUN pip install --no-cache-dir manimgl
 
-# 创建输出目录并设置权限
-RUN mkdir -p /home/jovyan/manim-output && \
-    chown -R jovyan:users /home/jovyan/manim-output
+# 设置工作目录
+WORKDIR /workspace
 
-# 切换回 jovyan 用户（BinderHub 标准用户）
-USER jovyan
+# 创建非特权用户
+RUN useradd -m -u 1000 user && chown -R user:user /workspace
+USER user
 
-# 设置环境变量
-ENV MANIM_VIDEO_DIR=/home/jovyan/manim-output
+# 设置默认命令
+CMD ["bash"]
