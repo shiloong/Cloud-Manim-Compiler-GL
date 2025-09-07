@@ -1,29 +1,34 @@
-FROM python:3.9-bullseye
+# 使用 Jupyter 的 scipy-notebook 作为基础镜像，已包含常用科学计算包
+FROM jupyter/scipy-notebook:latest
 
+# 切换到 root 用户进行系统级安装
 USER root
 
-# 配置软件源并更新系统
-RUN echo "deb http://deb.debian.org/debian bullseye main contrib non-free\ndeb http://deb.debian.org/debian bullseye-updates main contrib non-free\ndeb http://security.debian.org/debian-security bullseye-security main contrib non-free" > /etc/apt/sources.list && \
-    apt-get update -y && apt-get upgrade -y && \
-    # 安装精简依赖包
-    apt-get install -y --no-install-recommends \
-    # 核心中文字体（保留最常用的）
+# 安装 ManimGL 所需的系统依赖和中文字体
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \           # 视频处理工具
+    texlive \          # LaTeX 基础包
+    texlive-latex-extra \ # 额外的 LaTeX 包
+    libgl1-mesa-glx \  # OpenGL 支持
+    # 中文字体包
     fonts-wqy-zenhei \
-    # 核心图形和媒体依赖
-    libgl1-mesa-glx libglib2.0-0 ffmpeg \
-    # 必要编译工具
-    build-essential python3-dev libssl-dev \
-    # 核心pangocairo依赖
-    libpango1.0-dev libcairo2-dev && \
-    # 清理缓存
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    fonts-wqy-microhei \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# 精简Python包安装
-RUN pip install --upgrade pip -v && \
-    pip install notebook manimgl -v
+# 安装 ManimGL 及其 Python 依赖
+RUN pip install --no-cache-dir \
+    manimgl \          # 安装 ManimGL 框架
+    colour \           # 颜色处理库
 
-ARG NB_USER=manimuser
-USER ${NB_USER}
+# 设置工作目录
+WORKDIR /home/jovyan
 
-COPY --chown=manimuser:manimuser . /manim
-    
+# 复制示例文件（可选）
+COPY --chown=jovyan:users . /home/jovyan/manim-examples
+
+# 切换回 jovyan 用户（BinderHub 标准用户）
+USER jovyan
+
+# 设置默认启动命令（BinderHub 会自动启动 JupyterLab）
+# 不需要显式设置 CMD，BinderHub 会处理
