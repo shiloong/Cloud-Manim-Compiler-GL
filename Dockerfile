@@ -5,7 +5,6 @@ FROM jupyter/scipy-notebook:latest
 USER root
 
 # 安装 ManimGL 所需的系统依赖和中文字体
-# 注意：避免在包名后添加注释，以免造成 Docker 解析错误
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     texlive \
@@ -27,23 +26,40 @@ RUN pip install --no-cache-dir \
 # 设置工作目录
 WORKDIR /home/jovyan
 
-# 创建示例目录并添加示例文件
-RUN mkdir -p manim-examples && chown -R jovyan:users manim-examples
+# 创建示例目录和输出目录
+RUN mkdir -p manim-examples manim-output && \
+    chown -R jovyan:users manim-examples manim-output
 
-# 添加一个简单的示例文件
-COPY --chown=jovyan:users examples/ /home/jovyan/manim-examples/
+# 创建一个简单的示例文件（直接在 Dockerfile 中创建，避免 COPY 问题）
+RUN echo "from manimlib import *
+
+class CircleExample(Scene):
+    def construct(self):
+        circle = Circle(color=BLUE, fill_opacity=0.5)
+        self.play(ShowCreation(circle))
+        self.wait(1)
+        self.play(circle.animate.set_color(GREEN), run_time=2)
+        self.wait(1)
+" > /home/jovyan/manim-examples/circle_example.py && \
+    chown jovyan:users /home/jovyan/manim-examples/circle_example.py
+
+# 创建一个简单的启动说明文件
+RUN echo '#!/bin/bash
+echo "ManimGL 环境已准备就绪!"
+echo "您可以通过以下方式使用 ManimGL:"
+echo "1. 在终端中运行: manimgl your_scene.py YourSceneClass"
+echo "2. 在 Jupyter Notebook 中创建 Python 脚本并运行"
+echo ""
+echo "示例文件位于: /home/jovyan/manim-examples/"
+echo "输出目录位于: /home/jovyan/manim-output/"
+' > /usr/local/bin/start-manim.sh && \
+    chmod +x /usr/local/bin/start-manim.sh && \
+    chown jovyan:users /usr/local/bin/start-manim.sh
 
 # 切换回 jovyan 用户（BinderHub 标准用户）
 USER jovyan
 
 # 设置环境变量
 ENV MANIM_VIDEO_DIR=/home/jovyan/manim-output
-
-# 创建输出目录
-RUN mkdir -p /home/jovyan/manim-output
-
-# 添加启动脚本
-COPY --chown=jovyan:users start-manim.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/start-manim.sh
 
 # 设置默认启动命令（BinderHub 会自动启动 JupyterLab）
