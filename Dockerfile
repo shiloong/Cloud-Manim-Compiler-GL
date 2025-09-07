@@ -5,12 +5,14 @@ FROM jupyter/scipy-notebook:latest
 USER root
 
 # 安装 ManimGL 所需的系统依赖和中文字体
+# 注意：避免在包名后添加注释，以免造成 Docker 解析错误
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \           # 视频处理工具
-    texlive \          # LaTeX 基础包
-    texlive-latex-extra \ # 额外的 LaTeX 包
-    libgl1-mesa-glx \  # OpenGL 支持
-    # 中文字体包
+    ffmpeg \
+    texlive \
+    texlive-latex-extra \
+    texlive-fonts-extra \
+    libgl1-mesa-glx \
+    libxcb-xinerama0 \
     fonts-wqy-zenhei \
     fonts-wqy-microhei \
     && apt-get clean \
@@ -18,17 +20,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 安装 ManimGL 及其 Python 依赖
 RUN pip install --no-cache-dir \
-    manimgl \          # 安装 ManimGL 框架
-    colour \           # 颜色处理库
+    manimgl \
+    colour \
+    ipywidgets
 
 # 设置工作目录
 WORKDIR /home/jovyan
 
-# 复制示例文件（可选）
-COPY --chown=jovyan:users . /home/jovyan/manim-examples
+# 创建示例目录并添加示例文件
+RUN mkdir -p manim-examples && chown -R jovyan:users manim-examples
+
+# 添加一个简单的示例文件
+COPY --chown=jovyan:users examples/ /home/jovyan/manim-examples/
 
 # 切换回 jovyan 用户（BinderHub 标准用户）
 USER jovyan
 
+# 设置环境变量
+ENV MANIM_VIDEO_DIR=/home/jovyan/manim-output
+
+# 创建输出目录
+RUN mkdir -p /home/jovyan/manim-output
+
+# 添加启动脚本
+COPY --chown=jovyan:users start-manim.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/start-manim.sh
+
 # 设置默认启动命令（BinderHub 会自动启动 JupyterLab）
-# 不需要显式设置 CMD，BinderHub 会处理
