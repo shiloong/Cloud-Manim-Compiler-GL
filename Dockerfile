@@ -1,10 +1,10 @@
-# 使用 Jupyter 的 minimal-notebook 作为基础镜像，减少潜在的依赖冲突
+# 使用 Jupyter 的 minimal-notebook 作为基础镜像
 FROM jupyter/minimal-notebook:latest
 
 # 切换到 root 用户进行系统级安装
 USER root
 
-# 安装 ManimGL 所需的系统依赖和中文字体
+# 安装 ManimGL 所需的系统依赖和中文字体，包括编译工具
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     texlive \
@@ -13,14 +13,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb-xinerama0 \
     fonts-wqy-zenhei \
     fonts-wqy-microhei \
+    # 添加编译工具
+    build-essential \
+    libcairo2-dev \
+    pkg-config \
+    python3-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 先安装一些基础依赖，再安装 ManimGL
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir numpy scipy pillow pycairo
-
-# 安装 ManimGL - 使用特定的版本以确保兼容性
+# 直接安装 ManimGL，它会处理所有依赖
 RUN pip install --no-cache-dir manimgl
 
 # 切换回 jovyan 用户
